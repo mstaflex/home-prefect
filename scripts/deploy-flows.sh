@@ -17,5 +17,5 @@ export PYTHONPATH="$REPO_ROOT/src"
 export PREFECT_API_URL="${PREFECT_API_URL:-http://localhost:4200/api}"
 
 echo "Deploying flows to $PREFECT_API_URL …"
-python -m home_prefect.deployments.network
+python3 -m home_prefect.deployments.network
 echo "Done."
