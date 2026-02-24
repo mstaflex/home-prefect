@@ -1,0 +1,34 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.dev.yml
+#
+# Extends ../docker/docker-compose.yml with a devcontainer service.
+# VS Code attaches to this service; the Prefect stack runs alongside it.
+# ─────────────────────────────────────────────────────────────────────────────
+name: home-prefect
+
+services:
+  devcontainer:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      # Mount the full repository into the container
+      - ..:/workspaces/home-prefect:cached
+      # Persist Poetry cache between rebuilds
+      - poetry-cache:/root/.cache/pypoetry
+      # Reuse the host's Docker socket so you can run docker commands inside
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+      PYTHONPATH:      /workspaces/home-prefect/src
+    working_dir: /workspaces/home-prefect
+    # Keep the container alive
+    command: sleep infinity
+    networks:
+      - prefect-net
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+
+volumes:
+  poetry-cache:

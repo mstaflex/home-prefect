@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.worker
+#
+# Lightweight image for running a Prefect worker + the project's flow code.
+# Suitable for a generic x86 Linux server or a powerful workstation.
+# ─────────────────────────────────────────────────────────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System dependencies required by some tasks (ping, etc.)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends iputils-ping curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN pip install --no-cache-dir poetry==1.8.*
+
+# Copy dependency manifests first for better layer caching
+COPY pyproject.toml ./
+COPY poetry.lock* ./
+
+# Install core + worker dependencies only
+RUN poetry config virtualenvs.create false \
+ && poetry install --no-interaction --no-ansi --only main,worker
+
+# Copy application source
+COPY src/ ./src/
+
+ENV PYTHONPATH=/app/src
+ENV PREFECT_API_URL=http://prefect-server:4200/api
+
+# Start a Prefect worker in the "default" process work pool.
+# Override PREFECT_API_URL at runtime for remote servers.
+CMD ["prefect", "worker", "start", "--pool", "default-process-pool", "--type", "process"]

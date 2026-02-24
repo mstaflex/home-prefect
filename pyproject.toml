@@ -1,0 +1,100 @@
+[tool.poetry]
+name = "home-prefect"
+version = "0.1.0"
+description = "Home network automation and orchestration with Prefect"
+authors = []
+readme = "README.md"
+license = "MIT"
+packages = [{ include = "home_prefect", from = "src" }]
+
+# ── Core dependencies (all environments) ──────────────────────────────────────
+[tool.poetry.dependencies]
+python        = "^3.11"
+prefect       = "^3.0"
+pydantic      = "^2.0"
+pydantic-settings = "^2.0"
+python-dotenv = "^1.0"
+httpx         = "^0.27"
+rich          = "^13.0"
+
+# ── Server  ───────────────────────────────────────────────────────────────────
+# Runs on the home server: Prefect server + UI + worker.
+# Install with:  poetry install --with server
+[tool.poetry.group.server]
+optional = true
+
+[tool.poetry.group.server.dependencies]
+asyncpg          = "^0.29"   # async PostgreSQL driver for Prefect backend
+prefect-sqlalchemy = "^0.4"  # SQLAlchemy extras (used by Prefect server)
+uvicorn          = { version = "^0.30", extras = ["standard"] }
+
+# ── Worker (generic Linux/x86 client) ─────────────────────────────────────────
+# A machine that only runs a Prefect worker to pick up flow runs.
+# Install with:  poetry install --with worker
+[tool.poetry.group.worker]
+optional = true
+
+[tool.poetry.group.worker.dependencies]
+# No extra packages needed beyond core for a plain worker.
+# Add flow-specific libraries here as you create them, e.g.:
+# paramiko = "^3.0"   # SSH tasks
+
+# ── Raspberry Pi client ───────────────────────────────────────────────────────
+# Runs on a Raspberry Pi; includes GPIO / hardware-access libraries.
+# Install with:  poetry install --with rpi
+[tool.poetry.group.rpi]
+optional = true
+
+[tool.poetry.group.rpi.dependencies]
+gpiozero  = "^2.0"
+smbus2    = "^0.4"
+# RPi.GPIO ships with the OS on most Pi images; add if needed:
+# RPi.GPIO = {version = "^0.7", markers = "sys_platform == 'linux'"}
+
+# ── Development ───────────────────────────────────────────────────────────────
+# Install with:  poetry install --with dev
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pytest             = "^8.0"
+pytest-asyncio     = "^0.23"
+pytest-cov         = "^5.0"
+ruff               = "^0.4"
+mypy               = "^1.10"
+pre-commit         = "^3.7"
+
+# ── Build system ──────────────────────────────────────────────────────────────
+[build-system]
+requires      = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# ── Ruff (linter + formatter) ─────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length    = 100
+src            = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "TCH"]
+ignore = ["E501"]   # line length handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ── Mypy ──────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version      = "3.11"
+strict              = true
+ignore_missing_imports = true
+mypy_path           = "src"
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths        = ["tests"]
+asyncio_mode     = "auto"
+addopts          = "--cov=home_prefect --cov-report=term-missing -q"
+
+[tool.coverage.run]
+source = ["src"]
+omit   = ["tests/*"]

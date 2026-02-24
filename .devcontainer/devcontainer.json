@@ -1,0 +1,63 @@
+{
+  // ── home-prefect devcontainer ──────────────────────────────────────────────
+  // Builds a Python 3.11 container with Poetry pre-installed and starts the
+  // full Prefect stack (server + postgres) via Docker Compose so you can
+  // develop on Windows without installing anything locally.
+  //
+  // Prerequisites on the host:
+  //   • Docker Desktop (with WSL2 backend recommended)
+  //   • VS Code with the "Dev Containers" extension
+  //
+  // Usage:
+  //   1. Open this folder in VS Code.
+  //   2. F1 → "Dev Containers: Reopen in Container"
+  //   3. Wait for the container to build and start.
+  //   4. Prefect UI → http://localhost:4200
+  // ─────────────────────────────────────────────────────────────────────────
+  "name": "home-prefect dev",
+
+  // Use a Docker Compose file that adds the devcontainer service on top of
+  // the existing stack.
+  "dockerComposeFile": ["../docker/docker-compose.yml", "docker-compose.dev.yml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/home-prefect",
+
+  // Forward Prefect UI port to the host
+  "forwardPorts": [4200],
+  "portsAttributes": {
+    "4200": {
+      "label": "Prefect UI",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  // Install dependencies and set up pre-commit hooks after the container starts
+  "postCreateCommand": "poetry install --with dev,server && pre-commit install",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "tamasfe.even-better-toml",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
+        },
+        "mypy-type-checker.importStrategy": "fromEnvironment"
+      }
+    }
+  }
+}

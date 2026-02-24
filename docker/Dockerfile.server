@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.server
+#
+# Extends the official Prefect image with the server dependency group.
+# Used when you need to bake custom code into the server image itself.
+# For most use-cases the stock prefecthq/prefect:3-latest in docker-compose
+# is sufficient – use this only if you need project code on the server.
+# ─────────────────────────────────────────────────────────────────────────────
+FROM prefecthq/prefect:3-latest
+
+WORKDIR /app
+
+# Install Poetry
+RUN pip install --no-cache-dir poetry==1.8.*
+
+# Copy dependency manifests first for better layer caching
+COPY pyproject.toml ./
+# poetry.lock is optional – generate it locally first: `poetry lock`
+COPY poetry.lock* ./
+
+# Install core + server dependencies (no dev, no venv inside container)
+RUN poetry config virtualenvs.create false \
+ && poetry install --no-interaction --no-ansi --only main,server
+
+# Copy application source
+COPY src/ ./src/
+
+ENV PYTHONPATH=/app/src
+
+CMD ["prefect", "server", "start"]
