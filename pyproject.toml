@@ -24,7 +24,7 @@ rich          = "^13.0"
 optional = true
 
 [tool.poetry.group.server.dependencies]
-asyncpg          = "^0.29"   # async PostgreSQL driver for Prefect backend
+asyncpg          = "^0.30"   # async PostgreSQL driver for Prefect backend
 prefect-sqlalchemy = "^0.4"  # SQLAlchemy extras (used by Prefect server)
 uvicorn          = { version = "^0.30", extras = ["standard"] }
 
