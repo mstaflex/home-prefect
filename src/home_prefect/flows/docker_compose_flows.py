@@ -5,7 +5,7 @@ from pathlib import Path
 from prefect import flow
 from prefect.logging import get_run_logger
 
-from home_prefect.tasks.docker import (
+from home_prefect.tasks.docker_tasks import (
     docker_compose_down,
     docker_compose_pull,
     docker_compose_up,

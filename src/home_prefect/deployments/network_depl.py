@@ -7,7 +7,7 @@ Run this script once to register deployments with the Prefect server:
 
 from prefect import serve
 
-from home_prefect.flows.network_health import network_health_check
+from home_prefect.flows.network_health_flows import network_health_check
 
 
 def main() -> None:

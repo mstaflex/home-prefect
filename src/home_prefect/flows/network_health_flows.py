@@ -3,7 +3,7 @@
 from prefect import flow
 from prefect.logging import get_run_logger
 
-from home_prefect.tasks.network import http_check, ping_host
+from home_prefect.tasks.network_tasks import http_check, ping_host
 
 
 @flow(name="network-health-check", log_prints=True)

@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from home_prefect.flows.network_health import network_health_check
+from home_prefect.flows.network_health_flows import network_health_check
 
 
 @pytest.mark.asyncio
