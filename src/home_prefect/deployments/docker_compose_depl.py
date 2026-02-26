@@ -12,28 +12,11 @@ from pathlib import Path
 
 from prefect import serve
 
-from home_prefect.flows.docker_compose_flows import ComposeAction, docker_compose
+from home_prefect.flows.docker_compose_flows import docker_compose
 
 COMPOSE_FILE_NAMES = frozenset(
     {"docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"}
 )
-
-
-def _make_deployments_for_dir(
-    compose_dir: Path,
-    name_prefix: str,
-    tags: list[str],
-) -> list:
-    """Return one deployment per action for a single compose directory."""
-    path_str = str(compose_dir)
-    return [
-        docker_compose.to_deployment(
-            name=f"{name_prefix}-{action.value}",
-            parameters={"compose_dir": path_str, "action": action.value},
-            tags=tags,
-        )
-        for action in ComposeAction
-    ]
 
 
 def discover_and_serve(
@@ -43,14 +26,11 @@ def discover_and_serve(
     """Discover all docker-compose directories under *search_path* and serve deployments.
 
     For every immediate subdirectory that contains a compose file, one deployment
-    per action is registered:
+    is registered:
 
-        <hostname>-docker-<dirname>-up
-        <hostname>-docker-<dirname>-down
-        <hostname>-docker-<dirname>-restart
-        <hostname>-docker-<dirname>-update
-        <hostname>-docker-<dirname>-pull_up
+        <hostname>-docker-<dirname>
 
+    The ``action`` parameter is chosen at runtime when triggering the flow run.
     Deployment names are fully deterministic, so re-running this function is
     idempotent – existing deployments are updated, not duplicated.
     """
@@ -66,8 +46,13 @@ def discover_and_serve(
             continue
         if not any((candidate / f).exists() for f in COMPOSE_FILE_NAMES):
             continue
-        name_prefix = f"{hostname}-docker-{candidate.name}"
-        all_deployments.extend(_make_deployments_for_dir(candidate, name_prefix, tags))
+        all_deployments.append(
+            docker_compose.to_deployment(
+                name=f"{hostname}-docker-{candidate.name}",
+                parameters={"compose_dir": str(candidate)},
+                tags=tags,
+            )
+        )
 
     if not all_deployments:
         raise ValueError(f"No docker-compose directories found under {search_path}")
