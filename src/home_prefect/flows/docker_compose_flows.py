@@ -17,7 +17,7 @@ class ComposeAction(str, Enum):
     up = "up"
     down = "down"
     restart = "restart"
-    update = "update"   # down → pull → up
+    update = "update"  # down → pull → up
     pull_up = "pull_up"  # pull → up  (no prior down)
 
 

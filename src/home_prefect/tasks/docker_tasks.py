@@ -42,7 +42,7 @@ async def _run_compose(
 
     try:
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         proc.kill()
         await proc.wait()
         logger.error("docker compose %s timed out after %ss", args[0], timeout)
