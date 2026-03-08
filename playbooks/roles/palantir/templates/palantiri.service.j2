@@ -1,0 +1,17 @@
+[Unit]
+Description=Palantiri Camera Bridge Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User={{ palantir_user | default('pi') }}
+WorkingDirectory={{ palantir_dir }}
+ExecStart={{ palantir_venv }}/bin/python {{ palantir_dir }}/palantiri.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

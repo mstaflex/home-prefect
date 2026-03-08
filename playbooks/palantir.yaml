@@ -1,0 +1,7 @@
+---
+
+- name: Deploy Palantiri
+  hosts: palantiri
+  become: true
+  roles:
+    - palantir

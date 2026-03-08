@@ -11,7 +11,7 @@ FROM prefecthq/prefect:3-latest
 WORKDIR /app
 
 # Install Poetry
-RUN pip install --no-cache-dir poetry==1.8.*
+RUN pip install --no-cache-dir poetry==2.1.*
 
 # Copy dependency manifests first for better layer caching
 COPY pyproject.toml ./
@@ -20,8 +20,8 @@ COPY poetry.lock* ./
 
 # Install core + server dependencies (no dev, no venv inside container)
 RUN poetry config virtualenvs.create false \
- && poetry lock --no-update \
- && poetry install --no-interaction --no-ansi --only main,server
+ && poetry lock \
+ && poetry install --no-interaction --no-ansi --only main,server --no-root
 
 # Copy application source
 COPY src/ ./src/

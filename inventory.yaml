@@ -1,0 +1,9 @@
+---
+
+palantiri:
+  hosts:
+    palantir:
+      ansible_host: palantir.zopilocal
+      palantir_dir: /opt/palantiri
+      palantir_user: buschi
+      palantir_venv: /opt/palantiri/venv
