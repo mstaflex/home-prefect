@@ -15,25 +15,26 @@
   //   4. Prefect UI → http://localhost:4200
   // ─────────────────────────────────────────────────────────────────────────
   "name": "home-prefect dev",
-
   // Use a Docker Compose file that adds the devcontainer service on top of
   // the existing stack.
-  "dockerComposeFile": ["../docker/docker-compose.yml", "docker-compose.dev.yml"],
+  "dockerComposeFile": [
+    "../docker/docker-compose.yml",
+    "docker-compose.dev.yml"
+  ],
   "service": "devcontainer",
   "workspaceFolder": "/workspaces/home-prefect",
-
   // Forward Prefect UI port to the host
-  "forwardPorts": [4200],
+  "forwardPorts": [
+    4200
+  ],
   "portsAttributes": {
     "4200": {
       "label": "Prefect UI",
       "onAutoForward": "openBrowser"
     }
   },
-
   // Install dependencies and set up pre-commit hooks after the container starts
-  "postCreateCommand": "poetry install --with dev,server && pre-commit install",
-
+  "postCreateCommand": "poetry lock && poetry install --with dev,server && pre-commit install",
   "customizations": {
     "vscode": {
       "extensions": [

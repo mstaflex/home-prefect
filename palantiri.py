@@ -11,30 +11,42 @@ REST API (default port 8080):
 Requires: pip3 install picamera2 opencv-python-headless numpy flask requests
 """
 
-import time
 import logging
 import threading
+import time
+from datetime import datetime
+
+import boto3
 import cv2
 import requests
-from datetime import datetime
-from picamera2 import Picamera2
+from botocore.client import Config
+from botocore.exceptions import ClientError
 from flask import Flask, jsonify
+from picamera2 import Picamera2
 
 # ── n8n config ────────────────────────────────────────────────
-N8N_WEBHOOK_URL = (
-    "http://n8n.truenas.zopilocal:5678/webhook/"
-    "c9180df6-78b7-42d8-b3e8-c88b1854949c"
-)
+N8N_WEBHOOK_URL = "http://n8n.truenas.zopilocal:5678/webhook/c9180df6-78b7-42d8-b3e8-c88b1854949c"
+# N8N_WEBHOOK_URL = (
+#    "http://n8n.truenas.zopilocal:5678/webhook-test/"
+#    "c9180df6-78b7-42d8-b3e8-c88b1854949c"
+# )
+
+# ── MinIO config ──────────────────────────────────────────────
+ENDPOINT = "http://10.15.22.10:9000"
+ACCESS_KEY = "7YEBSZWAMEJN160LQMMB"
+SECRET_KEY = "cu9hqspXgycZZpFwsfutxE+Ul6aDPB3hqfd5lDwb"
+BUCKET = "palantir"
+PREFIX = "palantir1"
 
 # ── Camera config ─────────────────────────────────────────────
-RESOLUTION         = (1920, 1080)
+RESOLUTION = (1920, 1080)
 PREVIEW_RESOLUTION = (640, 360)
-CAPTURE_QUALITY    = 95
-WARMUP_FRAMES      = 10
+CAPTURE_QUALITY = 95
+WARMUP_FRAMES = 10
 
 # ── Sender config ─────────────────────────────────────────────
-SEND_INTERVAL = 0.2    # 5 fps
-REST_PORT     = 8080
+SEND_INTERVAL = 0.2  # 5 fps
+REST_PORT = 8080
 
 # ─────────────────────────────────────────────────────────────
 
@@ -47,15 +59,15 @@ log = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-_lock           = threading.Lock()
-_camera_ready   = False
-_last_lores_ts  = 0.0
+_lock = threading.Lock()
+_camera_ready = False
+_last_lores_ts = 0.0
 _sending_active = False
 
 
 def capture_jpeg(cam: Picamera2) -> bytes:
     frame = cam.capture_array("main")
-    bgr   = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     _, jpeg = cv2.imencode(".jpg", bgr, [cv2.IMWRITE_JPEG_QUALITY, CAPTURE_QUALITY])
     return jpeg.tobytes()
 
@@ -76,22 +88,53 @@ def send_to_n8n(image_bytes: bytes) -> bool:
         return False
 
 
+def make_s3():
+    return boto3.client(
+        "s3",
+        endpoint_url=ENDPOINT,
+        aws_access_key_id=ACCESS_KEY,
+        aws_secret_access_key=SECRET_KEY,
+        config=Config(signature_version="s3v4"),
+        region_name="us-east-1",
+    )
+
+
+def upload_to_minio(s3, image_bytes: bytes, key: str) -> bool:
+    try:
+        s3.put_object(
+            Bucket=BUCKET,
+            Key=key,
+            Body=image_bytes,
+            ContentType="image/jpeg",
+        )
+        log.info(f"Uploaded → {BUCKET}/{key}  ({len(image_bytes) // 1024} KB)")
+        return True
+    except ClientError as e:
+        log.error(
+            f"Upload failed: {e.response['Error']['Code']} — {e.response['Error']['Message']}"
+        )
+        return False
+
+
 # ── REST endpoints ────────────────────────────────────────────
+
 
 @app.route("/health", methods=["GET"])
 def health():
     with _lock:
-        ready   = _camera_ready
+        ready = _camera_ready
         last_ts = _last_lores_ts
         sending = _sending_active
     age = round(time.time() - last_ts, 2) if last_ts else None
-    ok  = ready and age is not None and age < 2.0
-    return jsonify({
-        "status":                 "ok" if ok else "degraded",
-        "camera_ready":           ready,
-        "sending":                sending,
-        "last_frame_age_seconds": age,
-    })
+    ok = ready and age is not None and age < 2.0
+    return jsonify(
+        {
+            "status": "ok" if ok else "degraded",
+            "camera_ready": ready,
+            "sending": sending,
+            "last_frame_age_seconds": age,
+        }
+    )
 
 
 @app.route("/start", methods=["POST"])
@@ -114,15 +157,18 @@ def stop_sending():
 
 # ── Camera loop ───────────────────────────────────────────────
 
+
 def camera_loop():
     global _camera_ready, _last_lores_ts
-
+    s3 = make_s3()
     cam = Picamera2()
-    cam.configure(cam.create_still_configuration(
-        main={"size": RESOLUTION, "format": "BGR888"},
-        lores={"size": PREVIEW_RESOLUTION, "format": "YUV420"},
-        buffer_count=2,
-    ))
+    cam.configure(
+        cam.create_still_configuration(
+            main={"size": RESOLUTION, "format": "BGR888"},
+            lores={"size": PREVIEW_RESOLUTION, "format": "YUV420"},
+            buffer_count=2,
+        )
+    )
     cam.start()
     log.info(f"Camera started — main {RESOLUTION}, lores {PREVIEW_RESOLUTION}")
 
@@ -149,7 +195,10 @@ def camera_loop():
 
             if should_send and (now - last_send) >= SEND_INTERVAL:
                 jpeg = capture_jpeg(cam)
-                send_to_n8n(jpeg)
+                # send_to_n8n(jpeg)
+                ts = datetime.now().strftime("%Y%m%d/%Y%m%d_%H-%M-%S_%f")[:-3]
+                key = f"{PREFIX}/{ts}.jpg"
+                upload_to_minio(s3, jpeg, key)
                 last_send = now
 
             time.sleep(0.1)

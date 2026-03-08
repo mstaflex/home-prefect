@@ -18,9 +18,6 @@ venv/
 ENV/
 env/
 
-# Poetry
-poetry.lock
-
 # Distribution / packaging
 .installed.cfg
 lib/
