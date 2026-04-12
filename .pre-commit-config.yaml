@@ -1,4 +1,13 @@
 repos:
+  - repo: local
+    hooks:
+      - id: check-vault-encrypted
+        name: Check Ansible vault encryption
+        entry: python3 scripts/check-vault-encrypted.py
+        language: python
+        files: ^(inventory\.yaml|group_vars/.*|host_vars/.*)$
+        types: [yaml]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.10
     hooks:

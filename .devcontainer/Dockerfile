@@ -7,10 +7,21 @@ FROM python:3.12-slim
 
 ARG POETRY_VERSION=2.1.*
 
+# Locale
+RUN apt-get update \
+     && apt-get install -y --no-install-recommends locales \
+     && sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+     && locale-gen \
+     && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
+
 # System utilities
 RUN apt-get update \
      && apt-get install -y --no-install-recommends \
-     git curl wget iputils-ping jq bash-completion \
+     git curl wget iputils-ping jq bash-completion ssh \
      # Docker CLI (so you can run `docker` inside the container)
      ca-certificates gnupg lsb-release \
      && install -m 0755 -d /etc/apt/keyrings \

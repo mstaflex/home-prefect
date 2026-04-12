@@ -1,5 +1,4 @@
 ---
 
-palantir_user: pi
 palantir_dir: /opt/palantiri
 palantir_venv: /opt/palantiri/venv

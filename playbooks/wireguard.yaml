@@ -1,0 +1,6 @@
+---
+- name: Deploy WireGuard netns connector
+  hosts: wg_connectors
+  become: true
+  roles:
+    - wireguard_netns

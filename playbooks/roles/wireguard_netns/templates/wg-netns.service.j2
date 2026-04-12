@@ -1,0 +1,22 @@
+[Unit]
+Description=WireGuard in network namespace {{ wg_netns_name }}
+Documentation=https://www.wireguard.com/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+# Retry setup on failure — covers transient boot-time race conditions.
+Restart=on-failure
+RestartSec={{ wg_keepalive }}s
+
+ExecStart=/usr/local/sbin/wg-netns-setup.sh
+ExecStop=/usr/local/sbin/wg-netns-teardown.sh
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

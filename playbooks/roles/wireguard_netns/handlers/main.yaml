@@ -1,0 +1,19 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart wg-netns
+  ansible.builtin.systemd:
+    name: wg-netns
+    state: restarted
+    daemon_reload: true
+
+- name: Reload host nftables
+  ansible.builtin.service:
+    name: nftables
+    state: reloaded
+
+- name: Apply sysctl
+  ansible.builtin.command: sysctl --system
+  changed_when: true

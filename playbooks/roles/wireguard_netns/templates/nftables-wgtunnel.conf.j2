@@ -1,0 +1,49 @@
+#!/usr/sbin/nft -f
+# Managed by Ansible — nftables rules for namespace: {{ wg_netns_name }}
+# First line of defence: runs inside the isolated network namespace.
+
+flush ruleset
+
+table inet filter {
+
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        # Loopback
+        iif lo accept
+
+        # Return traffic for established connections
+        ct state established,related accept
+
+        # Everything else — including SSH, ping, any Pi service — is invisible
+        # from inside the tunnel. The Pi cannot be reached from the peer.
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        # Return traffic
+        ct state established,related accept
+
+        # Whitelist: tunnel peer → specific LAN destinations only
+{% for rule in wg_allowed_forwards %}
+        iifname "wg0" oifname "veth-wg" \
+            ip daddr {{ rule.ip }} {{ rule.proto }} dport {{ rule.port }} \
+            ct state new accept
+{% endfor %}
+
+        # LAN → tunnel: implicit drop.
+        # No "iifname veth-wg oifname wg0 ... new accept" rule exists,
+        # so no connection can be initiated from the LAN into the tunnel.
+    }
+
+    chain output {
+        type filter hook output priority 0; policy drop;
+
+        oif lo accept
+        ct state established,related accept
+
+        # Namespace may reply toward the host via veth
+        oifname "veth-wg" accept
+    }
+}

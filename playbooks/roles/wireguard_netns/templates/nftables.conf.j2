@@ -1,0 +1,54 @@
+#!/usr/sbin/nft -f
+# Managed by Ansible — host (default) namespace nftables rules
+# Second line of defence: defence-in-depth even if namespace rules are bypassed.
+
+flush ruleset
+
+table inet filter {
+
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        iif lo accept
+        ct state established,related accept
+
+        # WireGuard UDP — must arrive on the LAN interface
+        iifname "{{ wg_lan_interface }}" udp dport {{ wg_listen_port }} accept
+
+        # SSH and ping always allowed from the internal LAN
+        iifname "{{ wg_lan_interface }}" ip saddr {{ wg_lan_subnet }} \
+            tcp dport 22 ct state new accept
+        iifname "{{ wg_lan_interface }}" ip saddr {{ wg_lan_subnet }} \
+            icmp type echo-request accept
+
+{% if wg_ssh_admin_ip is defined and wg_ssh_admin_ip %}
+        # SSH also from explicit admin IP (e.g. a jump host outside the LAN subnet)
+        iifname "{{ wg_lan_interface }}" ip saddr {{ wg_ssh_admin_ip }} \
+            tcp dport 22 ct state new accept
+{% endif %}
+
+        # Traffic from veth-host (namespace): drop at input — it must only be forwarded,
+        # the Pi itself must not be reachable from the tunnel side.
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        ct state established,related accept
+
+        # Whitelist: namespace → LAN (mirrors namespace rules, defence in depth)
+{% for rule in wg_allowed_forwards %}
+        iifname "veth-host" oifname "{{ wg_lan_interface }}" \
+            ip daddr {{ rule.ip }} {{ rule.proto }} dport {{ rule.port }} \
+            ct state new accept
+{% endfor %}
+
+        # LAN → tunnel: no new connections allowed (no matching accept rule).
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+        # Pi may reach the internet for updates, DNS, NTP.
+        # Harden further: set policy drop and add explicit rules for 53/udp, 123/udp, 80+443/tcp.
+    }
+}

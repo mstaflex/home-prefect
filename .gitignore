@@ -79,3 +79,7 @@ logs/
 # OS
 Thumbs.db
 desktop.ini
+
+# Ansible
+.vault_pass
+*.vault_pass

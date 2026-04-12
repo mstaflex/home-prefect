@@ -1,0 +1,15 @@
+# Managed by Ansible — do not edit manually
+# WireGuard interface config (raw wg params — no wg-quick sections)
+
+[Interface]
+PrivateKey={{ wg_private_key }}
+
+
+{% for wg_peer_public_key in wg_peer_public_keys %}
+[Peer]
+PublicKey={{ wg_peer_public_key }}
+AllowedIPs={{ wg_peer_tunnel_ip }}
+Endpoint={{ wg_peer_endpoint }}
+PersistentKeepalive={{ wg_keepalive }}
+
+{% endfor %}

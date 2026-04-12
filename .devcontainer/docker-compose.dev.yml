@@ -16,6 +16,8 @@ services:
       - ..:/workspaces/home-prefect:cached
       # Persist Poetry cache between rebuilds
       - poetry-cache:/root/.cache/pypoetry
+      # Persist SSH keys across container rebuilds (populate once with ssh-keygen or copy)
+      - ssh-keys:/root/.ssh
       # Reuse the host's Docker socket so you can run docker commands inside
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
@@ -32,3 +34,4 @@ services:
 
 volumes:
   poetry-cache:
+  ssh-keys:

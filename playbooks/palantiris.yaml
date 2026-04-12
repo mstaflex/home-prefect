@@ -4,4 +4,6 @@
   hosts: palantiri
   become: true
   roles:
+    - docker
+    - pizero_cam_setup
     - palantir

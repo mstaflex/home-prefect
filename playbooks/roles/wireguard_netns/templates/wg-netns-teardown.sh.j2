@@ -1,0 +1,16 @@
+#!/bin/bash
+# Managed by Ansible — tears down WireGuard network namespace.
+set -e
+
+NETNS="{{ wg_netns_name }}"
+
+echo "[wg-netns] Removing namespace ${NETNS} (destroys wg0, veth-wg)..."
+ip netns del "${NETNS}" 2>/dev/null || true
+
+echo "[wg-netns] Removing veth-host..."
+ip link del veth-host 2>/dev/null || true
+
+echo "[wg-netns] Removing tunnel route..."
+ip route del {{ wg_tunnel_subnet }} 2>/dev/null || true
+
+echo "[wg-netns] Teardown complete."

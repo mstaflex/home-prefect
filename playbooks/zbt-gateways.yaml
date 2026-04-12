@@ -1,0 +1,9 @@
+---
+
+- name: Deploy ZBT-Gateways
+  hosts: zbt_gateways
+  become: true
+  roles:
+    - docker
+    - thread_gateway
+    - matter_server

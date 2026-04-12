@@ -1,0 +1,23 @@
+---
+services:
+  otbr:
+    container_name: otbr
+    image: {{ thread_gateway_image }}
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - {{ thread_gateway_device }}:/dev/ttyACM0
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      OT_RCP_DEVICE: spinel+hdlc+uart:///dev/ttyACM0?uart-baudrate={{ thread_gateway_baudrate }}
+      OT_INFRA_IF: eth0
+      OT_THREAD_IF: wpan0
+      OT_LOG_LEVEL: 7
+      OT_REST_LISTEN_ADDR: 0.0.0.0
+      OT_REST_LISTEN_PORT: {{ thread_gateway_rest_port }}
+      OT_WEB_LISTEN_ADDR: 0.0.0.0
+      OT_WEB_LISTEN_PORT: {{ thread_gateway_web_port }}
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - './otbr_data:/data'

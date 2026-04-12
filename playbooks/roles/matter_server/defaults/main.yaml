@@ -1,0 +1,5 @@
+---
+
+matter_server_dir: /opt/matter-server
+matter_server_image: ghcr.io/home-assistant-libs/python-matter-server:stable
+matter_server_port: 5580

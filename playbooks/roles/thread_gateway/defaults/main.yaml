@@ -1,0 +1,8 @@
+---
+
+thread_gateway_dir: /opt/thread-gateway
+thread_gateway_device: /dev/serial/by-id/usb-Nabu_Casa_ZBT-2_441BF680E740-if00
+thread_gateway_baudrate: 460800
+thread_gateway_image: openthread/border-router:latest
+thread_gateway_web_port: 8080
+thread_gateway_rest_port: 8081

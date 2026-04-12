@@ -21,6 +21,8 @@ rich = "^13.0"
 # Runs on the home server: Prefect server + UI + worker.
 # Install with:  poetry install --with server
 ansible = "^13.4.0"
+boto2 = "^0.1.0"
+boto3 = "^1.42.65"
 [tool.poetry.group.server]
 optional = true
 

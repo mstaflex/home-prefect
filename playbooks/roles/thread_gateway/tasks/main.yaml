@@ -1,0 +1,47 @@
+---
+
+- name: Install Bluetooth packages
+  ansible.builtin.apt:
+    name:
+      - bluez
+      - bluetooth
+    state: present
+    update_cache: true
+  tags: bluetooth
+
+- name: Enable auto-power in BlueZ config
+  ansible.builtin.lineinfile:
+    path: /etc/bluetooth/main.conf
+    regexp: '^#?AutoEnable='
+    line: 'AutoEnable=true'
+  notify: Restart bluetooth
+  tags: bluetooth
+
+- name: Enable and start Bluetooth service
+  ansible.builtin.systemd:
+    name: bluetooth
+    enabled: true
+    state: started
+  tags: bluetooth
+
+- name: Create thread-gateway directory
+  ansible.builtin.file:
+    path: "{{ thread_gateway_dir }}"
+    state: directory
+    owner: root
+    mode: "0755"
+  tags: thread_gateway
+
+- name: Deploy docker-compose.yaml
+  ansible.builtin.template:
+    src: docker-compose.yaml.j2
+    dest: "{{ thread_gateway_dir }}/docker-compose.yaml"
+    mode: "0644"
+  tags: thread_gateway
+
+- name: Deploy thread-gateway compose stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ thread_gateway_dir }}"
+    state: present
+    pull: always
+  tags: thread_gateway

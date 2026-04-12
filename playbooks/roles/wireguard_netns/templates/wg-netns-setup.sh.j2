@@ -1,0 +1,52 @@
+#!/bin/bash
+# Managed by Ansible — sets up WireGuard inside a named network namespace.
+# Safe to re-run: tears down existing state first.
+set -e
+
+NETNS="{{ wg_netns_name }}"
+
+echo "[wg-netns] Cleaning up any previous state..."
+ip netns del "${NETNS}" 2>/dev/null || true
+ip link del veth-host   2>/dev/null || true
+ip link del wg0         2>/dev/null || true
+ip route del {{ wg_tunnel_subnet }} 2>/dev/null || true
+sleep 1  # wait for kernel to release WireGuard sockets from previous run
+
+echo "[wg-netns] Creating namespace ${NETNS}..."
+ip netns add "${NETNS}"
+
+echo "[wg-netns] Creating veth pair (veth-host ↔ veth-wg)..."
+ip link add veth-host type veth peer name veth-wg
+ip link set veth-wg netns "${NETNS}"
+
+echo "[wg-netns] Configuring host side of veth..."
+ip addr add {{ wg_veth_host_ip }} dev veth-host
+ip link set veth-host up
+
+echo "[wg-netns] Configuring namespace side of veth..."
+ip netns exec "${NETNS}" ip link set lo up
+ip netns exec "${NETNS}" ip addr add {{ wg_veth_wg_ip }} dev veth-wg
+ip netns exec "${NETNS}" ip link set veth-wg up
+
+echo "[wg-netns] Creating wg0 in host namespace and configuring (DNS available here)..."
+ip link add wg0 type wireguard
+wg setconf wg0 /etc/wireguard/wg0.conf
+
+echo "[wg-netns] Moving wg0 into ${NETNS} (interface goes down, no socket yet)..."
+ip link set wg0 netns "${NETNS}"
+
+echo "[wg-netns] Bringing up wg0 inside ${NETNS} (single socket created in host NS)..."
+ip netns exec "${NETNS}" ip addr add {{ wg_tunnel_pi_ip }} dev wg0
+ip netns exec "${NETNS}" ip link set wg0 up
+
+echo "[wg-netns] Setting up routing..."
+ip netns exec "${NETNS}" ip route add default via {{ wg_veth_host_gw }}
+ip route add {{ wg_tunnel_subnet }} via {{ wg_veth_wg_gw }}
+
+echo "[wg-netns] Enabling IP forwarding..."
+sysctl -w net.ipv4.ip_forward=1
+
+echo "[wg-netns] Loading nftables rules into ${NETNS}..."
+ip netns exec "${NETNS}" nft -f /etc/nftables-${NETNS}.conf
+
+echo "[wg-netns] Setup complete. Peer keepalive interval: {{ wg_keepalive }}s."

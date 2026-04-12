@@ -160,4 +160,7 @@ mc admin info local
 
 # Spiegelung: lokalen Ordner mit Bucket synchronisieren
 mc mirror ./lokaler-ordner/ local/mein-bucket/
+
+mc admin user svcacct add local palantir
+
 ```

@@ -1,0 +1,42 @@
+---
+# Network namespace name
+wg_netns_name: wgtunnel
+
+# Host LAN interface (where WireGuard UDP socket binds)
+wg_lan_interface: eth0
+
+# WireGuard listen port
+wg_listen_port: 51820
+
+# Tunnel addressing
+wg_tunnel_pi_ip: "10.99.0.1/24"
+wg_tunnel_subnet: "10.99.0.0/24"
+wg_peer_tunnel_ip: "10.99.0.2/32"
+
+# veth pair addressing (host ↔ namespace bridge)
+wg_veth_host_ip: "10.200.0.1/30"
+wg_veth_wg_ip: "10.200.0.2/30"
+wg_veth_host_gw: "10.200.0.1"   # default route inside namespace
+wg_veth_wg_gw: "10.200.0.2"     # host route target into namespace
+
+# PersistentKeepalive interval in seconds — drives reconnect attempts
+wg_keepalive: 25
+
+# Destinations inside the LAN that the tunnel peer is allowed to reach.
+# Format: list of {ip, port, proto}
+wg_allowed_forwards:
+  - ip: "10.15.24.10"
+    port: 8123
+    proto: tcp
+
+# LAN subnet — SSH and ping from this range always reach the Pi.
+wg_lan_subnet: "192.168.1.0/24"
+
+# SSH access to the Pi itself: only this source IP is allowed in host nftables.
+# Set to "" to disable SSH rule entirely.
+wg_ssh_admin_ip: null
+
+# Required — set per host in inventory or group_vars (use ansible-vault):
+# wg_private_key: "<PI_PRIVATE_KEY>"
+# wg_peer_public_key: "<PEER_PUBLIC_KEY>"
+# wg_peer_endpoint: "remote.example.com:51820"  # omit if peer initiates to us

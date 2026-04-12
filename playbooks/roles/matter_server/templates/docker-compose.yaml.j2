@@ -1,0 +1,16 @@
+---
+
+services:
+  matter-server:
+    container_name: matter-server
+    image: {{ matter_server_image }}
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./data:/data
+      - /run/dbus:/run/dbus
+    command: >-
+      --storage-path /data
+      --paa-root-cert-dir /data/credentials
+      --bluetooth-adapter 0
+      --primary-interface eth0
