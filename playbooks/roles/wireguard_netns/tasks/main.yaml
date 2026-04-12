@@ -47,6 +47,13 @@
   notify: Reload host nftables
   tags: wireguard
 
+- name: Enable and start nftables service
+  ansible.builtin.systemd:
+    name: nftables
+    enabled: true
+    state: started
+  tags: wireguard
+
 - name: Persist IP forwarding via sysctl.d
   ansible.builtin.copy:
     dest: /etc/sysctl.d/99-wg-forward.conf

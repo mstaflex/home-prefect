@@ -36,6 +36,9 @@ table inet filter {
 
         ct state established,related accept
 
+        # WireGuard UDP: namespace sends encrypted packets to peer via host
+        iifname "veth-host" oifname "{{ wg_lan_interface }}" meta l4proto udp ct state new accept
+
         # Whitelist: namespace → LAN (mirrors namespace rules, defence in depth)
 {% for rule in wg_allowed_forwards %}
         iifname "veth-host" oifname "{{ wg_lan_interface }}" \
@@ -50,5 +53,16 @@ table inet filter {
         type filter hook output priority 0; policy accept;
         # Pi may reach the internet for updates, DNS, NTP.
         # Harden further: set policy drop and add explicit rules for 53/udp, 123/udp, 80+443/tcp.
+    }
+}
+
+
+table ip nat {
+    chain postrouting {
+        type nat hook postrouting priority 100; policy accept;
+
+        # Masquerade forwarded tunnel traffic so LAN hosts see the Pi's LAN IP,
+        # not the WireGuard tunnel IP — avoids routing the tunnel subnet on the LAN.
+        iifname "veth-host" oifname "{{ wg_lan_interface }}" masquerade
     }
 }
