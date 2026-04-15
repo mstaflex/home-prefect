@@ -4,8 +4,7 @@
 [Interface]
 PrivateKey={{ wg_private_key }}
 
-
-{% for wg_peer_public_key in wg_peer_public_keys %}
+{% for wg_peer_public_key, wg_peer_tunnel_ip in wg_peer_public_keys | zip(wg_peer_tunnel_ips) %}
 [Peer]
 PublicKey={{ wg_peer_public_key }}
 AllowedIPs={{ wg_peer_tunnel_ip }}
